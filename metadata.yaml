@@ -1,5 +1,7 @@
 homepage: "https://github.com/bosslesss/flowscan-gtm-lead-events"
 documentation: "https://github.com/bosslesss/flowscan-gtm-lead-events/blob/main/README.md"
 versions:
+  - sha: ac2d66a4fd1fe8f4d31c7b8bcef57f02377f4ab9
+    changeNotes: Fix the permission for the fs_last_lead_event_id global. The tag reads it before overwriting it, so it needs read and write access.
   - sha: 21fb972646b4831dbb52e52ee7be82f40bac9fb7
     changeNotes: Initial release. Form submit, phone click, booking and chat start sent to GA4 and the Meta pixel with one shared event ID.
