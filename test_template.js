@@ -86,6 +86,16 @@ const tests = {
     assert.strictEqual(fbq(r)[4].eventID, 'lead-123');
     assert.strictEqual(r.globals.fs_last_lead_event_id, 'lead-123');
   },
+  'scenario code holds only JavaScript, never the YAML around it': () => {
+    scenarios().forEach((s) => {
+      assert.ok(!s.code.some((l) => /^- name:|^\s*code: \|-/.test(l)), s.name);
+    });
+  },
+  'no event id is published when consent blocks both destinations': () => {
+    const r = run(Object.assign({}, base, { eventId: 'lead-9' }), { denied: ['analytics_storage', 'ad_storage'] });
+    assert.strictEqual(r.outcome, 'failure');
+    assert.strictEqual(r.globals.fs_last_lead_event_id, undefined);
+  },
   'a generated event id is well formed and differs between leads': () => {
     let n = 0;
     const m = { generateRandom: () => ++n * 1000 };
@@ -144,6 +154,17 @@ const tests = {
       if (NEEDS[u]) assert.ok(have.includes(NEEDS[u]), u + ' needs ' + NEEDS[u]);
     });
   },
+  // Found 6 Nov (#389, Tag Assistant): setInWindow(key, value, true) overwrites, so GTM demands read AND write on
+  // the key; with write only the tag reported "Failed" although both events went out, and a gallery review would too.
+  'the global the template overwrites has read and write permission, execute off': () => {
+    const globals = permissions.find((p) => p.instance.key.publicId === 'access_globals').instance.param[0].value.listItem;
+    const perm = {};
+    globals.forEach((g) => {
+      const v = g.mapValue.map((x) => x.string !== undefined ? x.string : x.boolean);
+      perm[v[0]] = { read: v[1], write: v[2], execute: v[3] };
+    });
+    assert.deepStrictEqual(perm.fs_last_lead_event_id, { read: true, write: true, execute: false });
+  },
 };
 
 // The scenarios stored in the .tpl (GTM format: runCode/mock/assertApi/assertThat), run on the same emulator.
@@ -155,6 +176,8 @@ function scenarios() {
     if ((m = l.match(/^- name: (.*)$/))) { cur = { name: m[1].trim(), code: [] }; out.push(cur); }
     else if (/^\S/.test(l)) cur = null;
     else if (cur && /^  code: \|-/.test(l)) cur.inCode = true;
+    // Any other two-space key ends the code block, so no YAML lands in the JavaScript.
+    else if (cur && /^  \S/.test(l)) cur.inCode = false;
     else if (cur && cur.inCode) cur.code.push(l.replace(/^    /, ''));
   });
   return out;

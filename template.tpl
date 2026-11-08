@@ -157,11 +157,13 @@ if (data.sendMeta) {
   }
 }
 
-// Lets a server-side send read the same ID.
-setInWindow('fs_last_lead_event_id', eventId, true);
-
-if (sent) data.gtmOnSuccess();
-else data.gtmOnFailure();
+if (sent) {
+  // Lets a server-side send read the same ID, only when a browser event used it.
+  setInWindow('fs_last_lead_event_id', eventId, true);
+  data.gtmOnSuccess();
+} else {
+  data.gtmOnFailure();
+}
 
 
 ___WEB_PERMISSIONS___
@@ -234,7 +236,7 @@ ___WEB_PERMISSIONS___
                 ],
                 "mapValue": [
                   {"type": 1, "string": "fs_last_lead_event_id"},
-                  {"type": 8, "boolean": false},
+                  {"type": 8, "boolean": true},
                   {"type": 8, "boolean": true},
                   {"type": 8, "boolean": false}
                 ]
